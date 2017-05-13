@@ -92,3 +92,5 @@ ENV/
 *.png
 *.jpg
 *.json
+*.zip
+.idea/
