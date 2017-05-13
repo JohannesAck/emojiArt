@@ -1,5 +1,3 @@
-# indexes all emoji by main color (I'm guessing lots of yellow)
-
 from os import listdir
 import os.path
 import cv2
