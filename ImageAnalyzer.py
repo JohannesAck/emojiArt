@@ -2,8 +2,9 @@ import cv2
 import matplotlib.pyplot as plt
 import EmojiAnalyzer
 import math
-import os.path
+import os
 import json
+
 
 def cvToMatplt(image):
     """
@@ -23,20 +24,20 @@ def meanSquares(image, square_size):
     :param square_size: edge length of a square
     :return: squarified image, array
     """
-    #calc number of squares in both directions
+    # calc number of squares in both directions
     x_dim = len(image)
     y_dim = len(image[0])
     x_amount = x_dim // square_size
     y_amount = y_dim // square_size
 
     mean_color_array = [[0 for y in range(y_amount)] for x in range(x_amount)]
-    for x_square_num in range(0, x_amount): #assumes x > y
+    for x_square_num in range(0, x_amount):  # assumes x > y
         for y_square_num in range(0, y_amount):
-            #calc average from x_square * square_size and y_square * square_size on
+            # calc average from x_square * square_size and y_square * square_size on
             x_start = x_square_num * square_size
             y_start = y_square_num * square_size
 
-            #sum up pixels in square
+            # sum up pixels in square
             colorsum = [0, 0, 0]
             for x in range(x_start, x_start + square_size):
                 for y in range(y_start, y_start + square_size):
@@ -44,20 +45,20 @@ def meanSquares(image, square_size):
                     colorsum[1] += image[x][y][1]
                     colorsum[2] += image[x][y][2]
 
-            #calc mean
-            colorsum[:] = [x // (square_size**2) for x in colorsum]
+            # calc mean
+            colorsum[:] = [x // (square_size ** 2) for x in colorsum]
 
-            #set squares to mean
+            # set squares to mean
             for x in range(x_start, x_start + square_size):
                 for y in range(y_start, y_start + square_size):
                     image[x][y][0] = colorsum[0]
                     image[x][y][1] = colorsum[1]
                     image[x][y][2] = colorsum[2]
-            mean_color_array[x_square_num][y_square_num] = colorsum # save result
+            mean_color_array[x_square_num][y_square_num] = colorsum  # save result
     return image, mean_color_array
 
 
-def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder = 'emoji'):
+def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder='emoji'):
     """
     Emojifies the image and returns it
     """
@@ -66,7 +67,6 @@ def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder = '
     y_dim = len(image[0])
     x_amount = x_dim // square_size
     y_amount = y_dim // square_size
-
 
     for x_square_num in range(0, x_amount):
         for y_square_num in range(0, y_amount):
@@ -77,10 +77,10 @@ def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder = '
             minimum_distance = 1000000
             for key, val in emoji_dict.items():
                 distance = math.sqrt(
-                                     (mean_array[x_square_num][y_square_num][0] - val[0]) ** 2 +
-                                     (mean_array[x_square_num][y_square_num][1] - val[1]) ** 2 +
-                                     (mean_array[x_square_num][y_square_num][2] - val[2]) ** 2
-                                     ) #euclidian distance
+                    (mean_array[x_square_num][y_square_num][0] - val[0]) ** 2 +
+                    (mean_array[x_square_num][y_square_num][1] - val[1]) ** 2 +
+                    (mean_array[x_square_num][y_square_num][2] - val[2]) ** 2
+                )  # euclidian distance
                 if distance < minimum_distance:
                     minimum_distance = distance
                     best_fit = key
@@ -100,40 +100,36 @@ def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder = '
     return image
 
 
-
-
-
-
-
 def main():
     emoji_path = 'emoji'
-    square_size = 20
+    square_size = 5
+    image_path = 'johannes.jpg'
 
+    # generate or load emoji_dict
     emoji_dict = {}
+    if (os.path.isfile('emoji_dict.json')):
+        with open('emoji_dict.json', 'r') as f:
+            emoji_dict = json.load(f)
+    else:
+        emoji_dict = EmojiAnalyzer.index_emoji(emoji_path)
+        try:
+            with open('emoji_dict.json', 'w') as f:
+                json.dump(dict(emoji_dict), f)
+        except Exception:
+            print('Exception during json dump, removing json file.')
+            if os.path.isfile('emoji_dict.json'):
+                os.remove('emoji_dict.json')
 
-    # if(os.path.isfile('emoji_dict.json')):
-    #     with open('emoji_dict.json', 'r') as f:
-    #         emoji_dict = json.load(f)
-    # else:
-    #     emoji_dict = EmojiAnalyzer.index_emoji(emoji_path)
-    #     print(type(emoji_dict))
-    #     with open('emoji_dict.json', 'w') as f:
-    #             json.dump(dict(emoji_dict), f) #NOTE: not serializable, potentially due to int8-type from image
-
-    #TODO: make this saveable as json as it takes quite long to build
-
-    emoji_dict = EmojiAnalyzer.index_emoji(emoji_path)
-
-
-    img = cv2.imread('andreas.jpg', cv2.IMREAD_COLOR)
+    img = cv2.imread(image_path, cv2.IMREAD_COLOR)
     square_img, mean_array = meanSquares(img, square_size)
+
+    print('Emojifying image...')
     emojifyed_img = emojify_image(img, emoji_dict, mean_array, square_size, emoji_path)
 
     cv2.imwrite('output.jpg', emojifyed_img)
 
     plt.imshow(cvToMatplt(emojifyed_img))
     plt.show()
-
 
 
 if __name__ == '__main__':

@@ -15,7 +15,11 @@ def index_emoji(path_of_folder):
     for emoji in dir:
         count += 1
         print('Processing emoji:' + emoji + " (" + str(count) + '/2427)')
-        index.update({emoji : list(mean_color_of_file(os.path.join(path_of_folder, emoji)))})  # adds path and color to dict
+        index.update(
+            {emoji: list(mean_color_of_file(os.path.join(path_of_folder, emoji)))})  # adds path and color to dict
+
+    for key, val in index.items():  # convert numpy ints to ints
+        val[:] = [x.item() for x in val]
 
     return index
 
