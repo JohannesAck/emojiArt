@@ -18,11 +18,10 @@ def cvToMatplt(image):
 
 def meanSquares(image, square_size):
     """
-    Splits an image in to squares of a given size and paints them in the average color as well as returns average
-    colors as array
+    Splits an image in to squares of a given size and returns average colors as array
     :param image: Images in cv2 BGR format
     :param square_size: edge length of a square
-    :return: squarified image, array
+    :return: array with mean values
     """
     # calc number of squares in both directions
     x_dim = len(image)
@@ -47,15 +46,9 @@ def meanSquares(image, square_size):
 
             # calc mean
             colorsum[:] = [x // (square_size ** 2) for x in colorsum]
+            mean_color_array[x_square_num][y_square_num] = colorsum
 
-            # set squares to mean
-            for x in range(x_start, x_start + square_size):
-                for y in range(y_start, y_start + square_size):
-                    image[x][y][0] = colorsum[0]
-                    image[x][y][1] = colorsum[1]
-                    image[x][y][2] = colorsum[2]
-            mean_color_array[x_square_num][y_square_num] = colorsum  # save result
-    return image, mean_color_array
+    return mean_color_array
 
 
 def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder='emoji'):
@@ -97,12 +90,14 @@ def emojify_image(image, emoji_dict, mean_array, square_size, path_of_folder='em
             for x in range(square_size):
                 for y in range(square_size):
                     image[x + x_start][y + y_start] = emoji_cropped[x][y]
-    return image
+
+            cropped_image = image[0 : x_amount * square_size, 0 : y_amount * square_size]
+    return cropped_image
 
 
 def main():
     emoji_path = 'emoji'
-    square_size = 5
+    square_size = 100
     image_path = 'johannes.jpg'
 
     # generate or load emoji_dict
@@ -121,7 +116,9 @@ def main():
                 os.remove('emoji_dict.json')
 
     img = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    square_img, mean_array = meanSquares(img, square_size)
+
+    print('Calculating means...')
+    mean_array = meanSquares(img, square_size)
 
     print('Emojifying image...')
     emojifyed_img = emojify_image(img, emoji_dict, mean_array, square_size, emoji_path)
